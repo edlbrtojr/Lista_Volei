@@ -25,7 +25,7 @@ export default function InscricaoPage(props: Props) {
         if (data.id !== id) {
           const inscricoesRes = await fetch("/api/evento", { method: "PUT" });
           const todosEventos = await inscricoesRes.json();
-          const evento = todosEventos.find((e: any) => e.id === id);
+          const evento = todosEventos.find((e: { id: string }) => e.id === id);
           
           if (!isMounted) return;
 

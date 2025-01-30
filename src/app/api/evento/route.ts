@@ -55,7 +55,7 @@ export async function POST(req: Request) {
 }
 
 // New endpoint to list all events
-export async function PUT(req: Request) {
+export async function PUT() {
   return NextResponse.json(eventos);
 }
 

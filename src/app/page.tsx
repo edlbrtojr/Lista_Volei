@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { use } from 'react'
 
 type Props = {
@@ -9,12 +8,11 @@ type Props = {
 }
 
 export default function InscricaoPage(props: Props) {
-  const router = useRouter()
   const { id } = use(props.params)
-  const [registros, setRegistros] = useState<any[]>([])
+  const [registros, setRegistros] = useState<{ nome: string; data: Date; ip: string; pagou: boolean }[]>([])
   const [totalVagas, setTotalVagas] = useState(12) // Default to 12, can be updated based on your logic
   const [nome, setNome] = useState('')
-  const [eventoAtual, setEventoAtual] = useState<any>(null)
+  const [eventoAtual, setEventoAtual] = useState<{ mensagem: string; local: string; numPessoas: number; dataInicio: string; duracao: string; quadra: string; precoHora: number } | null>(null)
 
   useEffect(() => {
     let isMounted = true;
@@ -95,7 +93,7 @@ export default function InscricaoPage(props: Props) {
             </div>
             <div className="bg-white dark:bg-gray-800 p-3 rounded-lg">
               <span className="block text-gray-500 dark:text-gray-400">Cota</span>
-              <strong>R$ {(eventoAtual.duracao * eventoAtual.precoHora / eventoAtual.numPessoas).toFixed(2)}</strong>
+              <strong>R$ {(Number(eventoAtual.duracao) * Number(eventoAtual.precoHora) / eventoAtual.numPessoas).toFixed(2)}</strong>
             </div>
           </div>
         </div>

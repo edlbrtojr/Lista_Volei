@@ -13,7 +13,6 @@ export async function middleware(req: NextRequest) {
   } else {
     const data = await res.json();
     const agora = new Date();
-    const inicioEvento = new Date(data.dataInicio);
     const inicioInscricao = new Date(data.dataInscricao);
 
     // Handle redirections based on event timing

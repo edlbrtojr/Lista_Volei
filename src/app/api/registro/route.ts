@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-let registros: any[] = [];
+const registros: { nome: string; data: Date; ip: string }[] = [];
 
 export async function GET() {
   return NextResponse.json(registros);
