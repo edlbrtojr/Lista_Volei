@@ -8,6 +8,9 @@ type Evento = {
   mensagem: string;
   local: string;
   localCustom?: string;
+  duracao: string;
+  quadra: string;
+  precoHora: string;
 };
 
 let eventos: Evento[] = [];
@@ -42,7 +45,10 @@ export async function POST(req: Request) {
     id: crypto.randomUUID(),
     ...body,
     dataInicio: new Date(body.dataInicio),
-    dataInscricao: new Date(body.dataInscricao)
+    dataInscricao: new Date(body.dataInscricao),
+    duracao: body.duracao,
+    quadra: body.quadra,
+    precoHora: body.precoHora
   };
   eventos.push(novoEvento);
   return NextResponse.json({ message: "Jogo criado" });
@@ -68,7 +74,10 @@ export async function PATCH(req: Request) {
     eventos[index] = {
       ...body,
       dataInicio: new Date(body.dataInicio),
-      dataInscricao: new Date(body.dataInscricao)
+      dataInscricao: new Date(body.dataInscricao),
+      duracao: body.duracao,
+      quadra: body.quadra,
+      precoHora: body.precoHora
     };
     return NextResponse.json({ message: "Jogo atualizado" });
   }

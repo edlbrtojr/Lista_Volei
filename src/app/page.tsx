@@ -1,92 +1,183 @@
-"use client";
-import { useEffect, useState } from "react";
+'use client'
 
-export default function Home({ eventId }: { eventId?: string }) {
-  const [nome, setNome] = useState("");
-  const [registros, setRegistros] = useState<any[]>([]);
-  const [eventoAtivo, setEventoAtivo] = useState(false);
-  const [eventoAtual, setEventoAtual] = useState<any>(null);
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { use } from 'react'
+
+type Props = {
+  params: Promise<{ id: string }>
+}
+
+export default function InscricaoPage(props: Props) {
+  const router = useRouter()
+  const { id } = use(props.params)
+  const [registros, setRegistros] = useState<any[]>([])
+  const [totalVagas, setTotalVagas] = useState(12) // Default to 12, can be updated based on your logic
+  const [nome, setNome] = useState('')
+  const [eventoAtual, setEventoAtual] = useState<any>(null)
 
   useEffect(() => {
-    async function fetchEvento() {
-      const res = await fetch("/api/evento");
-      const data = await res.json();
-      const agora = new Date();
-      if (data && new Date(data.dataInicio) <= agora) {
-        setEventoAtivo(true);
-        setEventoAtual(data);
+    let isMounted = true;
+
+    async function fetchRegistros() {
+      try {
+        const res = await fetch('/api/evento')
+        const data = await res.json()
+        
+        if (!isMounted) return;
+
+        setRegistros(data?.registros ?? [])
+        setTotalVagas(data?.totalVagas ?? 12)
+        setEventoAtual(data) // Store the current event details
+      } catch (error) {
+        console.error('Error fetching registros:', error)
       }
     }
-    fetchEvento();
-  }, []);
 
-  const enviarNome = async () => {
-    if (!nome.trim()) return;
-    const res = await fetch("/api/registro", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nome }),
-    });
-    const novoRegistro = await res.json();
-    setRegistros([...registros, novoRegistro]);
-    setNome("");
-  };
+    fetchRegistros()
 
-  return eventoAtivo ? (
-    <div className="space-y-8">
-      <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold my-8">Inscrição para o Vôlei</h1>
-        {eventoAtual && (
-          <div className="text-gray-600 dark:text-gray-400">
-            <p className="text-lg font-medium">{eventoAtual.mensagem}</p>
-            <p>Local: {eventoAtual.local}</p>
-            <p>Data: {new Date(eventoAtual.dataInicio).toLocaleDateString()}</p>
-            <p>Horário: {new Date(eventoAtual.dataInicio).toLocaleTimeString()}</p>
-            <p>Total de vagas: {eventoAtual.numPessoas}</p>
-          </div>
-        )}
-      </div>
+    return () => {
+      isMounted = false
+    }
+  }, [id])
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!nome.trim()) return
+
+    try {
+      const res = await fetch('/api/registro', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome: nome.trim() })
+      })
+
+      if (res.ok) {
+        const novoRegistro = await res.json()
+        setRegistros([...registros, novoRegistro])
+        setNome('')
+      }
+    } catch (error) {
+      console.error('Error submitting registration:', error)
+    }
+  }
+
+  const mainList = registros.slice(0, totalVagas)
+  const waitingList = registros.slice(totalVagas)
+
+  return (
+    <div className="max-w-4xl mx-auto py-8">
+      <h1 className="text-3xl font-bold text-center mb-4">Vôlei dos Desesperados</h1>
       
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mb-8">
-        <input
-          type="text"
-          placeholder="Digite seu nome"
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-          className="w-full sm:w-80 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none"
-        />
-        <button 
-          onClick={enviarNome}
-          className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
-        >
-          Enviar
-        </button>
+      {eventoAtual && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-6 mb-8 text-center">
+          <h2 className="text-xl font-semibold mb-3">{eventoAtual.mensagem}</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg">
+              <span className="block text-gray-500 dark:text-gray-400">Local</span>
+              <strong>{eventoAtual.local}</strong>
+            </div>
+            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg">
+              <span className="block text-gray-500 dark:text-gray-400">Participantes</span>
+              <strong>{eventoAtual.numPessoas} jogadores</strong>
+            </div>
+            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg">
+              <span className="block text-gray-500 dark:text-gray-400">Data e Hora</span>
+              <strong>{new Date(eventoAtual.dataInicio).toLocaleString()}</strong>
+            </div>
+            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg">
+              <span className="block text-gray-500 dark:text-gray-400">Duração</span>
+              <strong>{eventoAtual.duracao} horas</strong>
+            </div>
+            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg">
+              <span className="block text-gray-500 dark:text-gray-400">Quadra</span>
+              <strong>{eventoAtual.quadra}</strong>
+            </div>
+            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg">
+              <span className="block text-gray-500 dark:text-gray-400">Cota</span>
+              <strong>R$ {(eventoAtual.duracao * eventoAtual.precoHora / eventoAtual.numPessoas).toFixed(2)}</strong>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+        <form onSubmit={handleSubmit} className="flex gap-4">
+          <input
+            type="text"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            placeholder="Digite seu nome"
+            className="flex-1 p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
+            required
+          />
+          <button
+            type="submit"
+            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+          >
+            Inscrever
+          </button>
+        </form>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-gray-50 dark:bg-gray-800">
-            <tr>
-              <th className="px-6 py-3 font-medium">Nome</th>
-              <th className="px-6 py-3 font-medium">Data e Hora</th>
-              <th className="px-6 py-3 font-medium">IP</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {registros.map((reg, index) => (
-              <tr key={index} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800">
-                <td className="px-6 py-4">{reg.nome}</td>
-                <td className="px-6 py-4">{new Date(reg.data).toLocaleString()}</td>
-                <td className="px-6 py-4 font-mono text-sm">{reg.ip}</td>
+      <div className="space-y-8">
+        <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 mb-4">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-gray-50 dark:bg-gray-800">
+              <tr>
+                <th className="px-6 py-3 font-medium">#</th>
+                <th className="px-6 py-3 font-medium">Nome</th>
+                <th className="px-6 py-3 font-medium">Data e Hora</th>
+                <th className="px-6 py-3 font-medium">IP</th>
+                <th className="px-6 py-3 font-medium">Pagou?</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              {mainList.map((reg, index) => (
+                <tr key={index} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <td className="px-6 py-4">{index + 1}</td>
+                  <td className="px-6 py-4">{reg.nome}</td>
+                  <td className="px-6 py-4">{new Date(reg.data).toLocaleString()}</td>
+                  <td className="px-6 py-4 font-mono text-sm">{reg.ip}</td>
+                  <td className="px-6 py-4">
+                    <input type="checkbox" checked={reg.pagou} onChange={() => handlePagouChange(index)} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <h2>Lista de Espera</h2>
+        <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-gray-50 dark:bg-gray-800">
+              <tr>
+                <th className="px-6 py-3 font-medium">#</th>
+                <th className="px-6 py-3 font-medium">Nome</th>
+                <th className="px-6 py-3 font-medium">Data e Hora</th>
+                <th className="px-6 py-3 font-medium">IP</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              {waitingList.map((reg, index) => (
+                <tr key={index} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <td className="px-6 py-4">{index + 1 + totalVagas}</td>
+                  <td className="px-6 py-4">{reg.nome}</td>
+                  <td className="px-6 py-4">{new Date(reg.data).toLocaleString()}</td>
+                  <td className="px-6 py-4 font-mono text-sm">{reg.ip}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-  ) : (
-    <div className="flex justify-center items-center min-h-[50vh]">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-    </div>
-  );
+  )
+
+  function handlePagouChange(index: number) {
+    const updatedRegistros = [...mainList]
+    updatedRegistros[index].pagou = !updatedRegistros[index].pagou
+    setRegistros([...updatedRegistros, ...waitingList])
+  }
 }

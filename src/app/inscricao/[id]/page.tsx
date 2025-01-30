@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Home from '../../page'
 import { use } from 'react'
 
 type Props = {
@@ -14,31 +13,43 @@ export default function InscricaoPage(props: Props) {
   const { id } = use(props.params)
 
   useEffect(() => {
-    async function verificarEvento() {
-      const res = await fetch('/api/evento')
-      const data = await res.json()
-      
-      if (data.id !== id) {
-        // If this is not the current active event, redirect to appropriate page
-        const inscricoesRes = await fetch("/api/evento", { method: "PUT" });
-        const todosEventos = await inscricoesRes.json();
-        const evento = todosEventos.find((e: any) => e.id === id);
-        
-        if (!evento) {
-          router.push('/acabou')
-          return
-        }
+    let isMounted = true;
 
-        const agora = new Date()
-        if (new Date(evento.dataInscricao) > agora) {
-          router.push('/aguarde')
-          return
+    async function verificarEvento() {
+      try {
+        const res = await fetch('/api/evento')
+        const data = await res.json()
+        
+        if (!isMounted) return;
+
+        if (data.id !== id) {
+          const inscricoesRes = await fetch("/api/evento", { method: "PUT" });
+          const todosEventos = await inscricoesRes.json();
+          const evento = todosEventos.find((e: any) => e.id === id);
+          
+          if (!isMounted) return;
+
+          if (!evento) {
+            router.push('/acabou')
+            return
+          }
+
+          const agora = new Date()
+          if (new Date(evento.dataInscricao) > agora) {
+            router.push('/aguarde')
+            return
+          }
         }
+      } catch (error) {
+        console.error('Error checking event:', error)
       }
     }
 
     verificarEvento()
+
+    return () => {
+      isMounted = false
+    }
   }, [id, router])
 
-  return <Home />
 }

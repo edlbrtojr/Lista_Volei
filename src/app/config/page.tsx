@@ -10,6 +10,9 @@ type Evento = {
   local: string;
   localCustom?: string;
   dataInscricao: string;
+  duracao: string;
+  quadra: string;
+  precoHora: string;
 };
 
 export default function Config() {
@@ -21,6 +24,9 @@ export default function Config() {
   const [local, setLocal] = useState("BE STRONG");
   const [localCustom, setLocalCustom] = useState("");
   const [dataInscricao, setDataInscricao] = useState("");
+  const [duracao, setDuracao] = useState('01');
+  const [quadra, setQuadra] = useState('');
+  const [precoHora, setPrecoHora] = useState('');
 
   const locais = ["BE STRONG", "PRAINHA", "LIFE ARENA", "OTHER"];
 
@@ -44,12 +50,18 @@ export default function Config() {
         dataInicio, 
         dataInscricao,
         mensagem,
-        local: localFinal 
+        local: localFinal,
+        duracao,
+        quadra,
+        precoHora
       }),
     });
     setDataInicio("");
     setMensagem("");
     setLocalCustom("");
+    setDuracao('01');
+    setQuadra('');
+    setPrecoHora('');
     fetchEventos();
   };
 
@@ -58,6 +70,9 @@ export default function Config() {
     setNumPessoas(evento.numPessoas);
     setDataInicio(evento.dataInicio);
     setMensagem(evento.mensagem);
+    setDuracao(evento.duracao);
+    setQuadra(evento.quadra);
+    setPrecoHora(evento.precoHora);
     if (locais.includes(evento.local)) {
       setLocal(evento.local);
       setLocalCustom("");
@@ -76,14 +91,21 @@ export default function Config() {
         id: editingId,
         numPessoas, 
         dataInicio, 
+        dataInscricao,
         mensagem,
-        local: localFinal 
+        local: localFinal,
+        duracao,
+        quadra,
+        precoHora
       }),
     });
     setEditingId(null);
     setDataInicio("");
     setMensagem("");
     setLocalCustom("");
+    setDuracao('01');
+    setQuadra('');
+    setPrecoHora('');
     fetchEventos();
   };
 
@@ -123,14 +145,14 @@ export default function Config() {
         {editingId ? "Editar Jogo" : "Agendar Novo Jogo"}
       </h1>
       
-      {/* Form section */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 space-y-6 mb-8">
         <div className="border-b dark:border-gray-700 pb-4 mb-4">
           <h2 className="text-lg font-semibold mb-4">Detalhes do Jogo</h2>
-          {/* Existing fields for game details */}
-          <div className="space-y-4">
+          
+          {/* Game Schedule Row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div className="space-y-2">
-              <label className="block text-sm font-medium">Data e horário do jogo:</label>
+              <label className="block text-sm font-medium">Data e horário:</label>
               <input 
                 type="datetime-local" 
                 value={dataInicio} 
@@ -139,32 +161,62 @@ export default function Config() {
               />
             </div>
 
+            {/* Players Amount Selector */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium">Número de jogadores:</label>
-              <select 
-                value={numPessoas} 
-                onChange={(e) => setNumPessoas(Number(e.target.value))}
-                className="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                <option value={12}>12</option>
-                <option value={16}>16</option>
-              </select>
+              <label className="block text-sm font-medium">Nº de jogadores:</label>
+              <div className="flex gap-2">
+                {[12, 16].map((num) => (
+                  <button
+                    key={num}
+                    onClick={() => setNumPessoas(num)}
+                    className={`w-10 h-10 rounded-lg border-2 flex items-center justify-center text-mdont-semibold transition-colors
+                      ${numPessoas === num 
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600' 
+                        : 'border-gray-300 dark:border-gray-700'}`}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
             </div>
 
+            {/* Duration Selector */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium">Título do jogo:</label>
-              <input 
-                type="text" 
-                value={mensagem} 
-                onChange={(e) => setMensagem(e.target.value)}
-                className="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
-              />
+              <label className="block text-sm font-medium">Duração:</label>
+              <div className="flex gap-2">
+              {['01', '02', '03', '04'].map(hrs => (
+                <button
+                key={hrs}
+                onClick={() => setDuracao(hrs)}
+                className={`w-10 h-10 rounded-lg border-2 flex items-center justify-center text-xs font-semibold transition-colors
+                  ${duracao === hrs 
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600' 
+                  : 'border-gray-300 dark:border-gray-700'}`}
+                >
+                {hrs} hr{hrs !== '01' ? 's' : ''}
+                </button>
+              ))}
+              </div>
             </div>
+          </div>
 
-            <div className="space-y-2">
+          {/* Title Field */}
+          <div className="space-y-2 mb-4">
+            <label className="block text-sm font-medium">Título do jogo:</label>
+            <input 
+              type="text" 
+              value={mensagem} 
+              onChange={(e) => setMensagem(e.target.value)}
+              className="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
+            />
+          </div>
+
+          {/* Location, Court Number and Price Row */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="md:col-span-2 space-y-2">
               <label className="block text-sm font-medium">Local:</label>
               <select 
-                value={local} 
+                value={local}
                 onChange={(e) => setLocal(e.target.value)}
                 className="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
               >
@@ -182,6 +234,28 @@ export default function Config() {
                   className="mt-2 w-full p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               )}
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium">Nº da Quadra:</label>
+              <input 
+                type="text"
+                value={quadra}
+                onChange={(e) => setQuadra(e.target.value)}
+                placeholder="Ex: Quadra 1"
+                className="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium">R$ Por hora:</label>
+              <input 
+                type="number"
+                value={precoHora}
+                onChange={(e) => setPrecoHora(e.target.value)}
+                placeholder="0.00"
+                className="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
+              />
             </div>
           </div>
         </div>
@@ -254,6 +328,15 @@ export default function Config() {
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       Local: {evento.local}
                     </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Duração: {evento.duracao} horas
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Quadra: {evento.quadra}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Preço por Hora: R$ {evento.precoHora}
+                    </p>
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -309,6 +392,15 @@ export default function Config() {
                     </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       Local: {evento.local}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Duração: {evento.duracao} horas
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Quadra: {evento.quadra}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Preço por Hora: R$ {evento.precoHora}
                     </p>
                   </div>
                   <button
