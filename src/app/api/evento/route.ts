@@ -1,85 +1,57 @@
 import { NextResponse } from "next/server";
-
-type Evento = {
-  id: string;
-  numPessoas: number;
-  dataInicio: Date;      // When the game starts
-  dataInscricao: Date;   // When registrations open
-  mensagem: string;
-  local: string;
-  localCustom?: string;
-  duracao: string;
-  quadra: string;
-  precoHora: string;
-};
-
-let eventos: Evento[] = [];
+import { sql } from '@/lib/db';
 
 export async function GET() {
   const agora = new Date();
-  // Return all upcoming events ordered by registration date
-  const eventosAtivos = eventos
-    .filter(e => new Date(e.dataInicio) > agora)
-    .sort((a, b) => new Date(a.dataInscricao).getTime() - new Date(b.dataInscricao).getTime());
+  
+  try {
+    // Get all upcoming events ordered by registration date
+    const { rows: eventos } = await sql`
+      SELECT * FROM events 
+      WHERE data_inicio > ${agora.toISOString()}
+      ORDER BY data_inscricao ASC
+    `;
 
-  if (eventosAtivos.length === 0) {
-    return NextResponse.json({ message: "Nenhum jogo agendado" }, { status: 404 });
+    if (eventos.length === 0) {
+      return NextResponse.json({ message: "Nenhum jogo agendado" }, { status: 404 });
+    }
+
+    // Find current active event
+    const eventoAtivo = eventos.find(e => 
+      new Date(e.data_inscricao) <= agora && new Date(e.data_inicio) > agora
+    );
+
+    if (eventoAtivo) {
+      return NextResponse.json({ ...eventoAtivo, inscricoesAbertas: true });
+    }
+
+    return NextResponse.json({ ...eventos[0], inscricoesAbertas: false });
+  } catch (error) {
+    console.error('Database error:', error);
+    return NextResponse.json({ message: "Erro ao buscar eventos" }, { status: 500 });
   }
-
-  // Find the current active event (if any)
-  const eventoAtivo = eventosAtivos.find(e => 
-    new Date(e.dataInscricao) <= agora && new Date(e.dataInicio) > agora
-  );
-
-  if (eventoAtivo) {
-    return NextResponse.json({ ...eventoAtivo, inscricoesAbertas: true });
-  }
-
-  // Return the next event
-  return NextResponse.json({ ...eventosAtivos[0], inscricoesAbertas: false });
 }
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const novoEvento = {
-    id: crypto.randomUUID(),
-    ...body,
-    dataInicio: new Date(body.dataInicio),
-    dataInscricao: new Date(body.dataInscricao),
-    duracao: body.duracao,
-    quadra: body.quadra,
-    precoHora: body.precoHora
-  };
-  eventos.push(novoEvento);
-  return NextResponse.json({ message: "Jogo criado" });
-}
-
-// New endpoint to list all events
-export async function PUT() {
-  return NextResponse.json(eventos);
-}
-
-// New endpoint to delete an event
-export async function DELETE(req: Request) {
-  const { id } = await req.json();
-  eventos = eventos.filter(e => e.id !== id);
-  return NextResponse.json({ message: "Jogo removido" });
-}
-
-// Add this new endpoint
-export async function PATCH(req: Request) {
-  const body = await req.json();
-  const index = eventos.findIndex(e => e.id === body.id);
-  if (index > -1) {
-    eventos[index] = {
-      ...body,
-      dataInicio: new Date(body.dataInicio),
-      dataInscricao: new Date(body.dataInscricao),
-      duracao: body.duracao,
-      quadra: body.quadra,
-      precoHora: body.precoHora
-    };
-    return NextResponse.json({ message: "Jogo atualizado" });
+  
+  try {
+    const { rows: [evento] } = await sql`
+      INSERT INTO events (
+        num_pessoas, data_inicio, data_inscricao, 
+        mensagem, local, duracao, quadra, preco_hora
+      ) VALUES (
+        ${body.numPessoas}, ${new Date(body.dataInicio).toISOString()}, 
+        ${new Date(body.dataInscricao).toISOString()}, ${body.mensagem}, 
+        ${body.local}, ${body.duracao}, ${body.quadra}, 
+        ${body.precoHora}
+      )
+      RETURNING *
+    `;
+    
+    return NextResponse.json({ message: "Jogo criado", evento });
+  } catch (error) {
+    console.error('Database error:', error);
+    return NextResponse.json({ message: "Erro ao criar evento" }, { status: 500 });
   }
-  return NextResponse.json({ message: "Jogo não encontrado" }, { status: 404 });
 }
