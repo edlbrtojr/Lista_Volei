@@ -10,9 +10,9 @@ type Props = {
 export default function InscricaoPage(props: Props) {
   const { id } = use(props.params)
   const [registros, setRegistros] = useState<{ nome: string; data: Date; ip: string; pagou: boolean }[]>([])
-  const [totalVagas, setTotalVagas] = useState(12) // Default to 12, can be updated based on your logic
+  const [totalVagas] = useState(12) // Default to 12, can be updated based on your logic
   const [nome, setNome] = useState('')
-  const [eventoAtual, setEventoAtual] = useState<{ mensagem: string; local: string; numPessoas: number; dataInicio: string; duracao: string; quadra: string; precoHora: number } | null>(null)
+  const [eventoAtual] = useState<{ mensagem: string; local: string; numPessoas: number; dataInicio: string; duracao: string; quadra: string; precoHora: number } | null>(null)
 
   useEffect(() => {
     let isMounted = true;
@@ -20,22 +20,26 @@ export default function InscricaoPage(props: Props) {
     async function fetchRegistros() {
       try {
         const res = await fetch(`/api/registro?eventId=${id}`);
-        const data = await res.json();
+        const data: { nome: string; data: string; ip: string; status: string; pagou: boolean }[] = await res.json();
         
         if (!isMounted) return;
     
+        // Convert data property to Date object
+        const registrosWithDate = data.map(reg => ({
+          ...reg,
+          data: new Date(reg.data)
+        }));
+    
         // Sort by registration date
-        const sortedRegistros = data.sort((a: any, b: any) => 
-          new Date(a.data).getTime() - new Date(b.data).getTime()
+        const sortedRegistros = registrosWithDate.sort((a, b) => 
+          a.data.getTime() - b.data.getTime()
         );
     
         // Split into confirmed and waiting lists
-        const confirmed = sortedRegistros.filter((r: any) => r.status === 'confirmed');
-        const waiting = sortedRegistros.filter((r: any) => r.status === 'waiting');
+        const confirmed = sortedRegistros.filter(r => r.status === 'confirmed');
+        const waiting = sortedRegistros.filter(r => r.status === 'waiting');
     
         setRegistros([...confirmed, ...waiting]);
-        setMainList(confirmed);
-        setWaitingList(waiting);
       } catch (error) {
         console.error('Error fetching registros:', error);
       }
