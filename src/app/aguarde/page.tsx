@@ -17,41 +17,32 @@ export default function Aguarde() {
 
   useEffect(() => {
     async function fetchEventos() {
-      const res = await fetch("/api/evento", { method: "PUT" });
-      if (res.status === 404) {
-        router.push("/acabou");
-        return;
+      try {
+        const res = await fetch("/api/evento", { method: "GET" });
+        if (res.status === 404) {
+          router.push("/acabou");
+          return;
+        }
+        
+        const data = await res.json();
+        const agora = new Date();
+        
+        // Sort and filter future events
+        const eventosFuturos = data
+          .filter((e: Evento) => new Date(e.dataInicio) > agora)
+          .sort((a: Evento, b: Evento) => 
+            new Date(a.dataInscricao).getTime() - new Date(b.dataInscricao).getTime()
+          );
+
+        setProximasInscricoes(eventosFuturos);
+      } catch (error) {
+        console.error('Error fetching events:', error);
       }
-      const data = await res.json();
-      const agora = new Date();
-      
-      // Filter future events and sort by registration date
-      const eventosFuturos = data
-        .filter((e: Evento) => new Date(e.dataInicio) > agora)
-        .sort((a: Evento, b: Evento) => 
-          new Date(a.dataInscricao).getTime() - new Date(b.dataInscricao).getTime()
-        );
-
-      if (eventosFuturos.length === 0) {
-        router.push("/acabou");
-        return;
-      }
-
-      // Check if any registration period has started
-      const inscricoesAbertas = eventosFuturos.find((e: { dataInscricao: string | number | Date; }) => 
-        new Date(e.dataInscricao) <= agora
-      );
-
-      if (inscricoesAbertas) {
-        router.push(`/inscricao/${inscricoesAbertas.id}`);
-        return;
-      }
-
-      setProximasInscricoes(eventosFuturos);
     }
 
     fetchEventos();
-    const interval = setInterval(fetchEventos, 1000);
+    // Update every minute
+    const interval = setInterval(fetchEventos, 60000);
     return () => clearInterval(interval);
   }, [router]);
 

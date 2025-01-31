@@ -19,16 +19,25 @@ export default function InscricaoPage(props: Props) {
 
     async function fetchRegistros() {
       try {
-        const res = await fetch('/api/evento')
-        const data = await res.json()
+        const res = await fetch(`/api/registro?eventId=${id}`);
+        const data = await res.json();
         
         if (!isMounted) return;
-
-        setRegistros(data?.registros ?? [])
-        setTotalVagas(data?.totalVagas ?? 12)
-        setEventoAtual(data) // Store the current event details
+    
+        // Sort by registration date
+        const sortedRegistros = data.sort((a: any, b: any) => 
+          new Date(a.data).getTime() - new Date(b.data).getTime()
+        );
+    
+        // Split into confirmed and waiting lists
+        const confirmed = sortedRegistros.filter((r: any) => r.status === 'confirmed');
+        const waiting = sortedRegistros.filter((r: any) => r.status === 'waiting');
+    
+        setRegistros([...confirmed, ...waiting]);
+        setMainList(confirmed);
+        setWaitingList(waiting);
       } catch (error) {
-        console.error('Error fetching registros:', error)
+        console.error('Error fetching registros:', error);
       }
     }
 
